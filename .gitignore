@@ -1,0 +1,42 @@
+# Build folders
+build/
+cmake-build-*/
+out/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CTestTestfile.cmake
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# Binaries
+*.exe
+*.out
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.a
+*.lib
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Models / generated assets
+models/
+assets/samples/generated/
+
+# Environment
+.env
+.env.*

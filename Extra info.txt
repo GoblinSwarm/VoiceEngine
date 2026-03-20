@@ -1,0 +1,361 @@
+Perfecto. Entonces ahora sí estamos hablando en serio 👀
+👉 **C++ + ejecución local + sistema modular = nivel semi-senior / R&D real**
+
+Vamos a aterrizar **la arquitectura por capas en C++**, respetando lo que ya diseñamos pero llevándolo a algo implementable.
+
+---
+
+# 🧠 Voice System en C++ — Arquitectura por capas
+
+```mermaid
+flowchart TD
+
+    subgraph AppLayer["App Layer"]
+        MAIN[main.cpp]
+        DEMO[VoiceDemoApp]
+    end
+
+    subgraph OrchestrationLayer["Orchestration"]
+        ORCH[VoiceOrchestrator]
+        ROUTER[CommandRouter]
+    end
+
+    subgraph PipelineLayer["Pipeline"]
+        VIN[VoiceInput]
+        VOUT[VoiceOutput]
+    end
+
+    subgraph CoreLayer["Core"]
+        AIN[AudioInput]
+        AOUT[AudioOutput]
+        PRE[AudioPreprocessor]
+        CFG[VoiceConfig]
+    end
+
+    subgraph ProviderLayer["Providers"]
+        STTI[ISTTEngine]
+        TTSI[ITTSEngine]
+        WHISPER[WhisperEngine]
+        PIPER[PiperEngine]
+    end
+
+    MAIN --> DEMO
+    DEMO --> ORCH
+
+    ORCH --> VIN
+    ORCH --> VOUT
+    ORCH --> ROUTER
+
+    VIN --> AIN
+    VIN --> PRE
+    VIN --> STTI
+
+    VOUT --> AOUT
+    VOUT --> TTSI
+
+    WHISPER --> STTI
+    PIPER --> TTSI
+
+    ORCH --> CFG
+```
+
+---
+
+# 📁 Estructura de carpetas (C++ real)
+
+```plaintext
+voice-system/
+│
+├── app/
+│   ├── main.cpp
+│   └── VoiceDemoApp.cpp
+│
+├── orchestration/
+│   ├── VoiceOrchestrator.h / .cpp
+│   └── CommandRouter.h / .cpp
+│
+├── pipeline/
+│   ├── VoiceInput.h / .cpp
+│   └── VoiceOutput.h / .cpp
+│
+├── core/
+│   ├── AudioInput.h / .cpp
+│   ├── AudioOutput.h / .cpp
+│   ├── AudioPreprocessor.h / .cpp
+│   └── VoiceConfig.h
+│
+├── providers/
+│   ├── stt/
+│   │   ├── ISTTEngine.h
+│   │   └── WhisperEngine.cpp
+│   │
+│   └── tts/
+│       ├── ITTSEngine.h
+│       └── PiperEngine.cpp
+│
+└── external/
+    ├── whisper.cpp/
+    └── piper/
+```
+
+---
+
+# 🔧 Interfaces clave (esto define TODO el sistema)
+
+## 🎤 STT Interface
+
+```cpp
+// providers/stt/ISTTEngine.h
+
+#pragma once
+#include <string>
+#include <vector>
+
+class ISTTEngine {
+public:
+    virtual ~ISTTEngine() = default;
+
+    virtual std::string transcribe(const std::vector<float>& audioBuffer) = 0;
+};
+```
+
+---
+
+## 🔊 TTS Interface
+
+```cpp
+// providers/tts/ITTSEngine.h
+
+#pragma once
+#include <string>
+#include <vector>
+
+class ITTSEngine {
+public:
+    virtual ~ITTSEngine() = default;
+
+    virtual std::vector<float> synthesize(const std::string& text) = 0;
+};
+```
+
+---
+
+# 🧩 Ejemplo Provider real
+
+## WhisperEngine (STT)
+
+```cpp
+// providers/stt/WhisperEngine.cpp
+
+#include "ISTTEngine.h"
+
+class WhisperEngine : public ISTTEngine {
+public:
+    std::string transcribe(const std::vector<float>& audioBuffer) override {
+        // Aquí iría la integración con whisper.cpp
+        // mock por ahora:
+        return "recognized speech";
+    }
+};
+```
+
+---
+
+## PiperEngine (TTS)
+
+```cpp
+// providers/tts/PiperEngine.cpp
+
+#include "ITTSEngine.h"
+
+class PiperEngine : public ITTSEngine {
+public:
+    std::vector<float> synthesize(const std::string& text) override {
+        // integración con Piper
+        return std::vector<float>{}; // audio generado
+    }
+};
+```
+
+---
+
+# 🔄 Pipeline Layer
+
+## VoiceInput
+
+```cpp
+class VoiceInput {
+private:
+    AudioInput& audioInput;
+    AudioPreprocessor& preprocessor;
+    ISTTEngine& stt;
+
+public:
+    std::string captureAndTranscribe() {
+        auto raw = audioInput.readChunk();
+        auto processed = preprocessor.normalize(raw);
+        return stt.transcribe(processed);
+    }
+};
+```
+
+---
+
+## VoiceOutput
+
+```cpp
+class VoiceOutput {
+private:
+    AudioOutput& audioOutput;
+    ITTSEngine& tts;
+
+public:
+    void synthesizeAndPlay(const std::string& text) {
+        auto audio = tts.synthesize(text);
+        audioOutput.play(audio);
+    }
+};
+```
+
+---
+
+# 🧠 Orchestration Layer
+
+## VoiceOrchestrator
+
+```cpp
+class VoiceOrchestrator {
+private:
+    VoiceInput& input;
+    VoiceOutput& output;
+    CommandRouter& router;
+
+public:
+    void runOnce() {
+        std::string text = input.captureAndTranscribe();
+        std::string response = router.handle(text);
+        output.synthesizeAndPlay(response);
+    }
+};
+```
+
+---
+
+# 🧠 CommandRouter (clave para tu juego)
+
+```cpp
+class CommandRouter {
+public:
+    std::string handle(const std::string& input) {
+        if (input == "hello") return "Hello, traveler.";
+        if (input == "open inventory") return "Opening inventory.";
+        return "I don't understand.";
+    }
+};
+```
+
+---
+
+# 🔥 Flujo real completo
+
+```text
+Microphone
+ → AudioInput
+ → AudioPreprocessor
+ → WhisperEngine (STT)
+ → text
+ → CommandRouter
+ → response text
+ → PiperEngine (TTS)
+ → AudioOutput
+ → Speaker
+```
+
+---
+
+# ⚙️ Librerías que vas a usar (importante)
+
+## 🎤 STT
+
+* whisper.cpp (OBLIGATORIO)
+
+## 🔊 TTS
+
+* Piper (recomendado)
+* o Coqui TTS (más pesado)
+
+## 🎧 Audio I/O
+
+Opciones:
+
+* PortAudio ✅ (recomendado)
+* SDL2 audio
+* RtAudio
+
+👉 PortAudio es el sweet spot.
+
+---
+
+# 🧠 Decisiones importantes (arquitectura seria)
+
+## 1. Todo offline
+
+✔ Bien para:
+
+* privacidad
+* reproducibilidad
+* portfolio fuerte
+
+---
+
+## 2. Buffers en `std::vector<float>`
+
+✔ estándar en audio
+✔ compatible con modelos
+
+---
+
+## 3. Interfaces puras
+
+✔ desacople total
+✔ podés testear con mocks
+✔ podés cambiar engine sin romper nada
+
+---
+
+# 🚀 Nivel pro (esto te posiciona fuerte)
+
+Si esto lo terminás:
+
+👉 No hiciste un “voice demo”
+👉 Hiciste un **voice engine local en C++**
+
+Eso es:
+
+* R&D
+* Game dev systems
+* AI systems engineering
+
+---
+
+# 📌 Siguiente paso (te recomiendo esto)
+
+El próximo paso lógico sería:
+
+👉 **MVP técnico REAL paso a paso:**
+
+1. Integrar PortAudio
+2. Capturar audio real
+3. Integrar whisper.cpp
+4. Obtener texto real
+5. Integrar Piper
+6. Reproducir audio
+
+Te lo puedo guiar como hicimos con Flashback:
+
+* paso a paso
+* sin magia
+* con debug logs
+* con arquitectura limpia
+
+Y eso ya sería otro nivel completamente 🔥

@@ -1,0 +1,97 @@
+1. VoiceOrchestrator
+
+Es el punto de entrada del sistema.
+
+Responsabilidades:
+
+coordinar STT y TTS
+
+decidir cuándo escuchar
+
+decidir cuándo responder
+
+conectar con lógica externa
+
+No debería:
+
+saber detalles de Whisper
+
+saber detalles de Piper
+
+tocar audio crudo directamente
+
+2. VoiceInput
+
+Encapsula todo el flujo de entrada.
+
+Pipeline:
+
+AudioInput -> AudioPreprocessor -> STTEngine -> transcript
+
+Entonces VoiceInput no “entiende” el modelo.
+Solo orquesta captura + preprocess + transcripción.
+
+3. VoiceOutput
+
+Encapsula el flujo de salida.
+
+Pipeline:
+
+text -> TTSEngine -> AudioOutput
+
+De nuevo, no debería conocer detalles internos del proveedor.
+
+4. STTEngine y TTSEngine
+
+Estas son las interfaces importantes.
+
+Esto te da desacople real.
+
+Ejemplo:
+
+hoy usás WhisperProvider
+
+mañana podrías usar VoskProvider
+
+o un MockSTTProvider para tests
+
+Lo mismo con TTS.
+
+5. AudioInput, AudioOutput, AudioPreprocessor
+
+Esto es el core compartido.
+
+Acá vive la parte reutilizable de verdad:
+
+sample rate
+
+channels
+
+buffers
+
+normalización
+
+trimming de silencio
+
+resampling
+
+Esto evita que STT y TTS se conviertan en dos mini proyectos duplicados.
+
+6. CommandRouter
+
+Esto es muy importante si pensás en el juego.
+
+Porque te separa:
+
+“lo que se escuchó”
+de
+
+“qué significa dentro del sistema”
+
+Ejemplo:
+
+"abre inventario" -> comando del juego
+"quién eres?" -> diálogo NPC
+"repite eso" -> control del sistema
+
+Entonces el motor de voz no queda acoplado a una sola app.
