@@ -21,7 +21,7 @@ echo [3/5] Generating project with CMake...
 cmake .. -G "Visual Studio 17 2022" -A x64
 if %errorlevel% neq 0 (
     echo.
-    echo ❌ CMake generation failed
+    echo CMake generation failed
     pause
     exit /b %errorlevel%
 )
@@ -31,7 +31,7 @@ echo [4/5] Building project...
 cmake --build . --config Debug
 if %errorlevel% neq 0 (
     echo.
-    echo ❌ Build failed
+    echo Build failed
     pause
     exit /b %errorlevel%
 )
@@ -46,7 +46,7 @@ if exist Debug\VoiceEngine.exe (
     Debug\VoiceEngine.exe
 ) else (
     echo.
-    echo ❌ Executable not found
+    echo Executable not found
 )
 
 echo.
