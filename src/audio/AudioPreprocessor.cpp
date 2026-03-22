@@ -48,3 +48,41 @@
 // - Avoid embedding provider-specific assumptions unless explicitly modeled.
 // - Prefer composable operations over hidden, monolithic preprocessing behavior.
 // - This module should prepare audio, not own the audio lifecycle.
+#include "voice_engine/audio/AudioPreprocessor.h"
+
+namespace voice_engine::audio
+{
+
+core::AudioBuffer AudioPreprocessor::normalize(const core::AudioBuffer& input) const
+{
+    // Stub inicial:
+    // por ahora devolvemos el buffer sin modificar.
+    // Más adelante acá irá la normalización de amplitud.
+    return input;
+}
+
+core::AudioBuffer AudioPreprocessor::trimSilence(const core::AudioBuffer& input) const
+{
+    // Stub inicial:
+    // por ahora devolvemos el buffer sin modificar.
+    // Más adelante acá irá el recorte de silencio al inicio/final.
+    return input;
+}
+
+core::AudioBuffer AudioPreprocessor::prepareForSTT(const core::AudioBuffer& input) const
+{
+    // Pipeline inicial y explícito:
+    // 1. trimSilence
+    // 2. normalize
+    //
+    // Más adelante se pueden agregar otros pasos como:
+    // - resampling
+    // - channel conversion
+    // - format adaptation
+
+    core::AudioBuffer processed = trimSilence(input);
+    processed = normalize(processed);
+    return processed;
+}
+
+} // namespace voice_engine::audio

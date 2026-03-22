@@ -1,47 +1,130 @@
-// src/core/VoiceConfig.cpp
-// ========================
+// src/audio/AudioInputDevice.cpp
+// =================================
 //
-// VoiceConfig
-// -----------
+// AudioInputDevice
+// ----------------
 //
-// Runtime implementation for the VoiceEngine configuration model.
+// Concrete implementation of IAudioInput for capturing audio from a device.
 //
 // Architecture role
 // -----------------
-// Core layer.
+// Audio layer.
 //
-// This module provides the concrete implementation of the VoiceConfig
-// structure, which centralizes runtime configuration values used across
-// the VoiceEngine system.
+// This module implements a concrete audio input device, typically backed by
+// a system audio backend (e.g., microphone via PortAudio or similar).
 //
-// It is responsible for managing configuration data at runtime, including
-// initialization, validation (if applicable), and access patterns for
-// system-wide parameters such as audio settings, model paths, and feature flags.
+// It is responsible ONLY for:
+// - managing the lifecycle of an audio input device
+// - capturing raw audio data into AudioBuffer objects
 //
-// Typical usage
-// -------------
-// Application bootstrap
+// Typical flow
+// ------------
+// VoiceEngine / InteractionLoop
 //        ↓
-// VoiceConfig initialization
+//   IAudioInput (interface)
 //        ↓
-// distributed across subsystems (audio, STT, TTS, orchestration)
+//   AudioInputDevice (this implementation)
+//        ↓
+//   backend (future: PortAudio / OS API)
 //
+// Responsibilities
+// ----------------
 // This module is responsible ONLY for:
-// - implementing the runtime behavior of configuration storage
-// - providing access to centralized configuration values
-// - maintaining a consistent configuration source for the system
+// - initializing and shutting down the audio input device
+// - starting and stopping capture sessions
+// - providing captured audio buffers on demand
+// - tracking device state (initialized, capturing)
 //
 // Non-responsibilities
 // --------------------
 // This module MUST NOT:
-// - initialize audio devices
-// - load STT or TTS models directly
-// - perform audio processing
-// - orchestrate system behavior
+// - perform audio preprocessing (noise reduction, normalization, etc.)
+// - perform speech-to-text (STT)
+// - decide when or why audio should be captured
+// - manage high-level orchestration or interaction logic
 //
 // Design notes
 // ------------
-// - Keep this module focused on configuration data handling only.
-// - Avoid embedding operational logic inside configuration.
-// - Configuration should describe behavior, not implement it.
-// - Ensure values remain consistent and easy to trace across the system.
+// - This implementation currently acts as a stub (no real audio backend).
+// - Future versions should integrate a backend such as PortAudio.
+// - Keep this module focused on device interaction only.
+// - Avoid introducing threading or async behavior at this stage.
+// - Higher-level modules should control when capture is triggered.
+//
+
+#include "voice_engine/audio/AudioInputDevice.h"
+
+namespace voice_engine::audio
+{
+
+AudioInputDevice::AudioInputDevice() = default;
+
+AudioInputDevice::~AudioInputDevice()
+{
+    shutdown();
+}
+
+bool AudioInputDevice::initialize(const core::VoiceConfig& config)
+{
+    m_config = config;
+    m_initialized = true;
+    m_capturing = false;
+    m_lastError = {};
+    return true;
+}
+
+bool AudioInputDevice::isInitialized() const noexcept
+{
+    return m_initialized;
+}
+
+bool AudioInputDevice::startCapture()
+{
+    if (!m_initialized)
+    {
+        m_lastError = core::Error{};
+        return false;
+    }
+
+    m_capturing = true;
+    return true;
+}
+
+void AudioInputDevice::stopCapture()
+{
+    m_capturing = false;
+}
+
+bool AudioInputDevice::isCapturing() const noexcept
+{
+    return m_capturing;
+}
+
+core::AudioBuffer AudioInputDevice::captureOnce()
+{
+    core::AudioBuffer buffer{};
+
+    if (!m_initialized || !m_capturing)
+    {
+        m_lastError = core::Error{};
+        return buffer;
+    }
+
+    // Stub temporal:
+    // por ahora devolvemos un buffer vacío/silencioso.
+    // Más adelante acá irá la lectura real desde el backend de audio.
+    return buffer;
+}
+
+void AudioInputDevice::shutdown()
+{
+    m_capturing = false;
+    m_initialized = false;
+}
+
+core::Error AudioInputDevice::lastError() const
+{
+    return m_lastError;
+}
+
+} // namespace voice_engine::audio

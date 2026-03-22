@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/audio/AudioPreprocessor.h
 // ==============================================
 //
@@ -39,3 +41,24 @@
 // - Avoid coupling this module to a specific STT or TTS provider.
 // - Prefer explicit, composable operations over hidden automatic behavior.
 // - This module should improve audio readiness, not own the audio lifecycle.
+//
+
+#include "voice_engine/core/AudioBuffer.h"
+
+namespace voice_engine::audio
+{
+
+class AudioPreprocessor
+{
+public:
+    AudioPreprocessor() = default;
+    ~AudioPreprocessor() = default;
+
+    [[nodiscard]] core::AudioBuffer normalize(const core::AudioBuffer& input) const;
+
+    [[nodiscard]] core::AudioBuffer trimSilence(const core::AudioBuffer& input) const;
+
+    [[nodiscard]] core::AudioBuffer prepareForSTT(const core::AudioBuffer& input) const;
+};
+
+} // namespace voice_engine::audio

@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/orchestration/CommandRouter.h
 // ===================================================
 //
@@ -46,3 +48,44 @@
 // - This module should operate on stable VoiceEngine domain types, not raw provider outputs.
 // - It should be easy to replace or expand this logic as the system evolves.
 // - Command semantics should remain separate from recognition and synthesis mechanics.
+//
+
+#include <string>
+
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/stt/STTTypes.h"
+
+namespace voice_engine::orchestration
+{
+
+enum class CommandAction
+{
+    None,
+    SpeakResponse,
+    ExecuteCommand
+};
+
+struct CommandRouteResult
+{
+    CommandAction action{CommandAction::None};
+    std::string responseText{};
+    std::string commandText{};
+    bool success{true};
+};
+
+class CommandRouter
+{
+public:
+    CommandRouter() = default;
+    ~CommandRouter() = default;
+
+    [[nodiscard]] CommandRouteResult route(
+        const stt::TranscriptionResult& transcription);
+
+    [[nodiscard]] core::Error lastError() const;
+
+private:
+    core::Error m_lastError{};
+};
+
+} // namespace voice_engine::orchestration

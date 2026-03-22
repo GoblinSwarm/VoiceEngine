@@ -1,39 +1,68 @@
-// include/voice_engine/stt/ISTTEngine.h
+#pragma once
+
+// include/voice_engine/tts/ITTSEngine.h
 // =====================================
 //
-// ISTTEngine
+// ITTSEngine
 // ----------
 //
-// Contract for speech-to-text engines used by VoiceEngine.
+// Contract for text-to-speech engines used by VoiceEngine.
 //
 // Architecture role
 // -----------------
-// STT layer.
+// TTS layer.
 //
-// This module defines the abstract contract that any speech-to-text engine
-// must satisfy in order to transcribe audio into text within the VoiceEngine system.
+// This module defines the abstract contract that any text-to-speech engine
+// must satisfy in order to synthesize text into audio within the VoiceEngine system.
 //
 // Typical implementations may include:
-// - Whisper-based engines
-// - offline/local STT backends
-// - mock or test transcription engines
+// - Piper-based engines
+// - offline/local TTS backends
+// - mock or test synthesis engines
 //
 // This module is responsible ONLY for:
-// - defining the transcription contract for STT providers
-// - abstracting speech recognition capabilities behind a stable interface
-// - allowing higher-level modules to depend on transcription behavior instead of concrete engines
+// - defining the synthesis contract for TTS providers
+// - abstracting speech synthesis capabilities behind a stable interface
+// - allowing higher-level modules to depend on synthesis behavior instead of concrete engines
 //
 // Non-responsibilities
 // --------------------
 // This module MUST NOT:
-// - implement transcription logic directly
-// - capture audio from devices
-// - preprocess audio
-// - decide how transcribed text should be interpreted or used
+// - implement synthesis logic directly
+// - play audio to output devices
+// - preprocess synthesized audio
+// - decide what text should be synthesized or why
 //
 // Design notes
 // ------------
 // - This interface should remain minimal and provider-agnostic.
-// - Prefer a contract centered on clear audio-to-text transformation.
+// - Prefer a contract centered on clear text-to-audio transformation.
 // - Keep backend-specific details out of this interface.
-// - Higher-level modules should depend on this abstraction, not on Whisper or any specific STT backend.
+// - Higher-level modules should depend on this abstraction, not on Piper or any specific TTS backend.
+//
+
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/core/VoiceConfig.h"
+#include "voice_engine/tts/TTSTypes.h"
+
+namespace voice_engine::tts
+{
+
+class ITTSEngine
+{
+public:
+    virtual ~ITTSEngine() = default;
+
+    virtual bool initialize(const core::VoiceConfig& config) = 0;
+
+    [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
+
+    [[nodiscard]] virtual SynthesisResult synthesize(
+        const SynthesisRequest& request) = 0;
+
+    virtual void shutdown() = 0;
+
+    [[nodiscard]] virtual core::Error lastError() const = 0;
+};
+
+} // namespace voice_engine::tts

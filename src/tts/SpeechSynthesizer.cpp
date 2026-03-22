@@ -51,3 +51,28 @@
 // - Provider-specific details must remain inside concrete ITTSEngine implementations.
 // - Return VoiceEngine domain types instead of raw provider payloads.
 // - Playback concerns should remain outside this module unless explicitly modeled elsewhere.
+
+#include "voice_engine/tts/SpeechSynthesizer.h"
+
+namespace voice_engine::tts
+{
+
+SpeechSynthesizer::SpeechSynthesizer(ITTSEngine& engine)
+    : m_engine(engine)
+{
+}
+
+SynthesisResult SpeechSynthesizer::synthesize(const SynthesisRequest& request)
+{
+    SynthesisResult result = m_engine.synthesize(request);
+    m_lastError = m_engine.lastError();
+
+    return result;
+}
+
+core::Error SpeechSynthesizer::lastError() const
+{
+    return m_lastError;
+}
+
+} // namespace voice_engine::tts

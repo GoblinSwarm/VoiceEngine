@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/stt/SpeechRecognizer.h
 // ============================================
 //
@@ -46,3 +48,33 @@
 // - Keep the recognizer focused on pipeline coordination, not engine internals.
 // - Audio preparation responsibilities should remain explicit and not hidden.
 // - The recognizer should return VoiceEngine domain types, not raw provider payloads.
+//
+
+#include "voice_engine/audio/AudioPreprocessor.h"
+#include "voice_engine/core/AudioBuffer.h"
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/stt/ISTTEngine.h"
+#include "voice_engine/stt/STTTypes.h"
+
+namespace voice_engine::stt
+{
+
+class SpeechRecognizer
+{
+public:
+    SpeechRecognizer(audio::AudioPreprocessor& preprocessor, ISTTEngine& engine);
+    ~SpeechRecognizer() = default;
+
+    [[nodiscard]] TranscriptionResult recognize(
+        const core::AudioBuffer& input,
+        const TranscriptionOptions& options = {});
+
+    [[nodiscard]] core::Error lastError() const;
+
+private:
+    audio::AudioPreprocessor& m_preprocessor;
+    ISTTEngine& m_engine;
+    core::Error m_lastError{};
+};
+
+} // namespace voice_engine::stt

@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/tts/SpeechSynthesizer.h
 // =============================================
 //
@@ -45,3 +47,28 @@
 // - Keep the synthesizer focused on pipeline coordination, not engine internals.
 // - The synthesizer should return VoiceEngine domain types, not raw provider payloads.
 // - Playback concerns should remain outside this module unless explicitly modeled elsewhere.
+//
+
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/tts/ITTSEngine.h"
+#include "voice_engine/tts/TTSTypes.h"
+
+namespace voice_engine::tts
+{
+
+class SpeechSynthesizer
+{
+public:
+    explicit SpeechSynthesizer(ITTSEngine& engine);
+    ~SpeechSynthesizer() = default;
+
+    [[nodiscard]] SynthesisResult synthesize(const SynthesisRequest& request);
+
+    [[nodiscard]] core::Error lastError() const;
+
+private:
+    ITTSEngine& m_engine;
+    core::Error m_lastError{};
+};
+
+} // namespace voice_engine::tts

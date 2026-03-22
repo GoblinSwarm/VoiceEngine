@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/stt/ISTTEngine.h
 // =====================================
 //
@@ -37,3 +39,32 @@
 // - Prefer a contract centered on clear audio-to-text transformation.
 // - Keep backend-specific details out of this interface.
 // - Higher-level modules should depend on this abstraction, not on Whisper or any specific STT backend.
+//
+
+#include "voice_engine/core/AudioBuffer.h"
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/core/VoiceConfig.h"
+#include "voice_engine/stt/STTTypes.h"
+
+namespace voice_engine::stt
+{
+
+class ISTTEngine
+{
+public:
+    virtual ~ISTTEngine() = default;
+
+    virtual bool initialize(const core::VoiceConfig& config) = 0;
+
+    [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
+
+    [[nodiscard]] virtual TranscriptionResult transcribe(
+        const core::AudioBuffer& audioBuffer,
+        const TranscriptionOptions& options = {}) = 0;
+
+    virtual void shutdown() = 0;
+
+    [[nodiscard]] virtual core::Error lastError() const = 0;
+};
+
+} // namespace voice_engine::stt

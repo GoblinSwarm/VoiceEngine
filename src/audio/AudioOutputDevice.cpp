@@ -44,3 +44,79 @@
 // - Avoid leaking external audio backend details outside the audio layer.
 // - Device lifecycle should remain explicit and predictable.
 // - This module should focus on playback, not on synthesis or orchestration.
+
+#include "voice_engine/audio/AudioOutputDevice.h"
+
+namespace voice_engine::audio
+{
+
+AudioOutputDevice::AudioOutputDevice() = default;
+
+AudioOutputDevice::~AudioOutputDevice()
+{
+    shutdown();
+}
+
+bool AudioOutputDevice::initialize(const core::VoiceConfig& config)
+{
+    m_config = config;
+    m_initialized = true;
+    m_playing = false;
+    m_lastError = {};
+    return true;
+}
+
+bool AudioOutputDevice::isInitialized() const noexcept
+{
+    return m_initialized;
+}
+
+bool AudioOutputDevice::startPlayback()
+{
+    if (!m_initialized)
+    {
+        m_lastError = core::Error{};
+        return false;
+    }
+
+    m_playing = true;
+    return true;
+}
+
+void AudioOutputDevice::stopPlayback()
+{
+    m_playing = false;
+}
+
+bool AudioOutputDevice::isPlaying() const noexcept
+{
+    return m_playing;
+}
+
+bool AudioOutputDevice::play(const core::AudioBuffer& buffer)
+{
+    if (!m_initialized || !m_playing)
+    {
+        m_lastError = core::Error{};
+        return false;
+    }
+
+    // Stub temporal:
+    // por ahora no enviamos audio a ningún backend real.
+    // Más adelante acá irá la reproducción concreta del contenido de `buffer`.
+    (void)buffer;
+    return true;
+}
+
+void AudioOutputDevice::shutdown()
+{
+    m_playing = false;
+    m_initialized = false;
+}
+
+core::Error AudioOutputDevice::lastError() const
+{
+    return m_lastError;
+}
+
+} // namespace voice_engine::audio

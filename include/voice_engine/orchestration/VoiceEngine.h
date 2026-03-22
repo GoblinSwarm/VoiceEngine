@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/orchestration/VoiceEngine.h
 // =================================================
 //
@@ -53,3 +55,47 @@
 // - Favor delegation over direct implementation.
 // - This class acts as the system boundary: external code should talk to this,
 //   not to internal modules directly.
+//
+
+#include "voice_engine/audio/IAudioInput.h"
+#include "voice_engine/audio/IAudioOutput.h"
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/orchestration/CommandRouter.h"
+#include "voice_engine/stt/SpeechRecognizer.h"
+#include "voice_engine/stt/STTTypes.h"
+#include "voice_engine/tts/SpeechSynthesizer.h"
+
+namespace voice_engine
+{
+namespace orchestration
+{
+
+class VoiceEngine
+{
+public:
+    VoiceEngine(
+        audio::IAudioInput& audioInput,
+        audio::IAudioOutput& audioOutput,
+        stt::SpeechRecognizer& speechRecognizer,
+        tts::SpeechSynthesizer& speechSynthesizer,
+        voice_engine::orchestration::CommandRouter& commandRouter);
+
+    ~VoiceEngine() = default;
+
+    [[nodiscard]] bool processOnce(
+        const stt::TranscriptionOptions& transcriptionOptions = {});
+
+    [[nodiscard]] core::Error lastError() const;
+
+private:
+    audio::IAudioInput& m_audioInput;
+    audio::IAudioOutput& m_audioOutput;
+    stt::SpeechRecognizer& m_speechRecognizer;
+    tts::SpeechSynthesizer& m_speechSynthesizer;
+    voice_engine::orchestration::CommandRouter& m_commandRouter;
+
+    core::Error m_lastError{};
+};
+
+} // namespace orchestration
+} // namespace voice_engine

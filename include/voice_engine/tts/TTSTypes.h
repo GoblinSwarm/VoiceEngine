@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/tts/TTSTypes.h
 // ===================================
 //
@@ -37,3 +39,55 @@
 // - Prefer returning engine-neutral audio representations (e.g. AudioBuffer).
 // - Avoid leaking backend-specific structures into the rest of the system.
 // - This file should define clear output types usable by synthesizers and orchestrators.
+//
+
+#include <string>
+
+#include "voice_engine/core/AudioBuffer.h"
+
+namespace voice_engine::tts
+{
+
+// ======================================================
+// Synthesis status
+// ======================================================
+
+enum class SynthesisStatus
+{
+    Idle = 0,
+    Processing,
+    Completed,
+    Failed
+};
+
+
+// ======================================================
+// Synthesis request
+// ======================================================
+
+struct SynthesisRequest
+{
+    std::string text{};
+
+    std::string voiceName{};
+    float speechRate = 1.0f;
+    float volume = 1.0f;
+};
+
+
+// ======================================================
+// Synthesis result
+// ======================================================
+
+struct SynthesisResult
+{
+    core::AudioBuffer audio{};
+
+    std::string originalText{};
+
+    SynthesisStatus status = SynthesisStatus::Idle;
+
+    double durationSeconds = 0.0;
+};
+
+} // namespace voice_engine::tts

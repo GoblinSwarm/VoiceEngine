@@ -1,3 +1,5 @@
+#pragma once
+
 // include/voice_engine/stt/STTTypes.h
 // ===================================
 //
@@ -38,3 +40,66 @@
 // - Prefer domain-oriented structures over backend-specific payloads.
 // - This file should model STT output clearly without leaking engine internals.
 // - Favor stable result types that can be used by recognizers, orchestrators, and tests.
+//
+
+#include <string>
+#include <vector>
+
+namespace voice_engine::stt
+{
+
+// ======================================================
+// Recognition status
+// ======================================================
+
+enum class RecognitionStatus
+{
+    Idle = 0,
+    Processing,
+    PartialResult,
+    Completed,
+    Failed
+};
+
+
+// ======================================================
+// Segment-level result
+// ======================================================
+
+struct TranscriptionSegment
+{
+    std::string text{};
+    double startTimeSeconds = 0.0;
+    double endTimeSeconds = 0.0;
+    float confidence = 0.0f;
+};
+
+
+// ======================================================
+// Full transcription result
+// ======================================================
+
+struct TranscriptionResult
+{
+    std::string fullText{};
+    std::vector<TranscriptionSegment> segments{};
+
+    float averageConfidence = 0.0f;
+    RecognitionStatus status = RecognitionStatus::Idle;
+
+    std::string language{};
+};
+
+
+// ======================================================
+// Optional request metadata (future-proofing)
+// ======================================================
+
+struct TranscriptionOptions
+{
+    std::string language = "auto";
+    bool translateToEnglish = false;
+    bool enablePartialResults = false;
+};
+
+} // namespace voice_engine::stt
