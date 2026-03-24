@@ -12,38 +12,43 @@
 // -----------------
 // STT layer.
 //
-// This module defines the core data structures used to represent
-// speech-to-text results and related metadata inside VoiceEngine.
+// This module defines the minimal shared data structures used to represent
+// speech-to-text results inside VoiceEngine.
 //
-// Typical examples may include:
-// - transcription results
-// - confidence values
-// - segment metadata
-// - recognition status information
+// Current design scope
+// --------------------
+// At the current stage of the project, the STT flow is intentionally modeled as:
+//
+// - closed batch transcription
+// - no partial/intermediate results
+// - final text output only
+//
+// This means the types in this file should reflect the current contract,
+// not hypothetical future capabilities.
 //
 // This module is responsible ONLY for:
-// - defining shared STT-related domain types
-// - providing a stable representation of transcription results
-// - separating STT data structures from engine implementation details
+// - defining shared STT-related result types
+// - providing a stable representation of final transcription output
+// - keeping STT result structures independent from concrete backend details
 //
 // Non-responsibilities
 // --------------------
 // This module MUST NOT:
 // - implement transcription logic
-// - capture or preprocess audio
-// - depend on a concrete STT backend
-// - decide how recognized text should be interpreted
+// - capture audio
+// - preprocess or convert audio
+// - depend on a concrete STT provider
+// - expose backend-specific payloads or internal inference data
 //
 // Design notes
 // ------------
 // - Keep these types provider-agnostic whenever possible.
-// - Prefer domain-oriented structures over backend-specific payloads.
-// - This file should model STT output clearly without leaking engine internals.
-// - Favor stable result types that can be used by recognizers, orchestrators, and tests.
+// - Model the current system honestly: final batch transcription only.
+// - Do not add speculative fields for features not implemented yet.
+// - Keep this contract small so engines and orchestrators can depend on it safely.
 //
 
 #include <string>
-#include <vector>
 
 namespace voice_engine::stt
 {
@@ -56,50 +61,20 @@ enum class RecognitionStatus
 {
     Idle = 0,
     Processing,
-    PartialResult,
     Completed,
     Failed
 };
 
-
 // ======================================================
-// Segment-level result
-// ======================================================
-
-struct TranscriptionSegment
-{
-    std::string text{};
-    double startTimeSeconds = 0.0;
-    double endTimeSeconds = 0.0;
-    float confidence = 0.0f;
-};
-
-
-// ======================================================
-// Full transcription result
+// Final transcription result
 // ======================================================
 
 struct TranscriptionResult
 {
     std::string fullText{};
-    std::vector<TranscriptionSegment> segments{};
-
-    float averageConfidence = 0.0f;
     RecognitionStatus status = RecognitionStatus::Idle;
-
     std::string language{};
-};
-
-
-// ======================================================
-// Optional request metadata (future-proofing)
-// ======================================================
-
-struct TranscriptionOptions
-{
-    std::string language = "auto";
-    bool translateToEnglish = false;
-    bool enablePartialResults = false;
+    std::string errorMessage{};
 };
 
 } // namespace voice_engine::stt

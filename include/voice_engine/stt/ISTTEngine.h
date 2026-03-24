@@ -6,44 +6,62 @@
 // ISTTEngine
 // ----------
 //
-// Contract for speech-to-text engines used by VoiceEngine.
+// Abstract contract for speech-to-text engine implementations.
 //
 // Architecture role
 // -----------------
 // STT layer.
 //
-// This module defines the abstract contract that any speech-to-text engine
-// must satisfy in order to transcribe audio into text within the VoiceEngine system.
+// This module defines the backend-agnostic contract that any concrete
+// speech-to-text engine must satisfy inside VoiceEngine.
 //
-// Typical implementations may include:
-// - Whisper-based engines
-// - offline/local STT backends
-// - mock or test transcription engines
+// Current design scope
+// --------------------
+// At the current stage of the project, the STT system is intentionally
+// modeled around:
+//
+// - batch transcription
+// - final results only
+// - local/offline execution
+//
+// This interface reflects that scope and must remain minimal.
 //
 // This module is responsible ONLY for:
-// - defining the transcription contract for STT providers
-// - abstracting speech recognition capabilities behind a stable interface
-// - allowing higher-level modules to depend on transcription behavior instead of concrete engines
+// - defining the lifecycle contract for STT engines
+// - defining the batch transcription contract for prepared audio input
+// - allowing higher-level modules to depend on abstraction instead of
+//   concrete backend implementations
 //
 // Non-responsibilities
 // --------------------
 // This module MUST NOT:
-// - implement transcription logic directly
-// - capture audio from devices
-// - preprocess audio
-// - decide how transcribed text should be interpreted or used
+// - implement transcription logic
+// - expose backend-specific types or details
+// - capture audio
+// - perform audio conversion or resampling
+// - define orchestration policy
+//
+// Input contract
+// --------------
+// Implementations are expected to receive:
+//
+// - mono PCM audio
+// - normalized float samples in range [-1.0, 1.0]
+// - sample rate already prepared for the target engine
+//
+// Any required audio conversion must happen before calling transcribe().
 //
 // Design notes
 // ------------
-// - This interface should remain minimal and provider-agnostic.
-// - Prefer a contract centered on clear audio-to-text transformation.
-// - Keep backend-specific details out of this interface.
-// - Higher-level modules should depend on this abstraction, not on Whisper or any specific STT backend.
+// - Keep this interface backend-agnostic.
+// - Keep it aligned with the current batch-only architecture.
+// - Do not add speculative methods for streaming or partial results.
+// - Prefer a small and stable contract.
 //
 
-#include "voice_engine/core/AudioBuffer.h"
-#include "voice_engine/core/ErrorTypes.h"
-#include "voice_engine/core/VoiceConfig.h"
+#include <vector>
+
+#include "voice_engine/stt/STTConfig.h"
 #include "voice_engine/stt/STTTypes.h"
 
 namespace voice_engine::stt
@@ -54,17 +72,19 @@ class ISTTEngine
 public:
     virtual ~ISTTEngine() = default;
 
-    virtual bool initialize(const core::VoiceConfig& config) = 0;
+    // --------------------------------------------------
+    // Lifecycle
+    // --------------------------------------------------
 
-    [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
-
-    [[nodiscard]] virtual TranscriptionResult transcribe(
-        const core::AudioBuffer& audioBuffer,
-        const TranscriptionOptions& options = {}) = 0;
-
+    virtual bool initialize(const STTConfig& config) = 0;
     virtual void shutdown() = 0;
+    virtual bool isInitialized() const = 0;
 
-    [[nodiscard]] virtual core::Error lastError() const = 0;
+    // --------------------------------------------------
+    // Transcription
+    // --------------------------------------------------
+
+    virtual TranscriptionResult transcribe(const std::vector<float>& audioBuffer) = 0;
 };
 
 } // namespace voice_engine::stt

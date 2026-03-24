@@ -35,6 +35,16 @@
 //        ↓
 // Audio output
 //
+// Current design scope
+// --------------------
+// At the current stage of the project, the STT flow is intentionally modeled as:
+//
+// - batch transcription
+// - final results only
+// - no per-call transcription option object
+//
+// VoiceEngine should remain aligned with that simplified contract.
+//
 // This module is responsible ONLY for:
 // - orchestrating high-level interactions between subsystems
 // - exposing a clean and stable interface to the outside world
@@ -82,8 +92,7 @@ public:
 
     ~VoiceEngine() = default;
 
-    [[nodiscard]] bool processOnce(
-        const stt::TranscriptionOptions& transcriptionOptions = {});
+    [[nodiscard]] bool processOnce();
 
     [[nodiscard]] core::Error lastError() const;
 

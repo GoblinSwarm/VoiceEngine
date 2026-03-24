@@ -28,6 +28,18 @@
 //        ↓
 // TranscriptionResult
 //
+// Current design scope
+// --------------------
+// At the current stage of the project, the STT pipeline is intentionally
+// modeled around:
+//
+// - batch transcription
+// - final results only
+// - no partial/intermediate recognition output
+//
+// This recognizer should reflect that scope and remain aligned with the
+// simplified STT contract.
+//
 // This module is responsible ONLY for:
 // - coordinating the speech recognition pipeline at the system level
 // - receiving audio data intended for transcription
@@ -52,7 +64,6 @@
 
 #include "voice_engine/audio/AudioPreprocessor.h"
 #include "voice_engine/core/AudioBuffer.h"
-#include "voice_engine/core/ErrorTypes.h"
 #include "voice_engine/stt/ISTTEngine.h"
 #include "voice_engine/stt/STTTypes.h"
 
@@ -65,16 +76,11 @@ public:
     SpeechRecognizer(audio::AudioPreprocessor& preprocessor, ISTTEngine& engine);
     ~SpeechRecognizer() = default;
 
-    [[nodiscard]] TranscriptionResult recognize(
-        const core::AudioBuffer& input,
-        const TranscriptionOptions& options = {});
-
-    [[nodiscard]] core::Error lastError() const;
+    [[nodiscard]] TranscriptionResult recognize(const core::AudioBuffer& input);
 
 private:
     audio::AudioPreprocessor& m_preprocessor;
     ISTTEngine& m_engine;
-    core::Error m_lastError{};
 };
 
 } // namespace voice_engine::stt

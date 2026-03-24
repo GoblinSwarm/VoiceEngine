@@ -1,9 +1,23 @@
 @echo off
+setlocal
+
 echo =====================================
-echo   VoiceEngine Build & Run Script
+echo   VoiceEngine Build Script
 echo =====================================
 
 cd /d E:\Productos\VoiceEngine
+
+echo.
+echo [0/5] Verifying dependencies...
+if not exist external\whisper.cpp\CMakeLists.txt (
+    echo.
+    echo Missing dependency: external\whisper.cpp
+    echo Please clone whisper.cpp into:
+    echo E:\Productos\VoiceEngine\external\whisper.cpp
+    echo.
+    pause
+    exit /b 1
+)
 
 echo.
 echo [1/5] Cleaning build folder...
@@ -37,16 +51,18 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [5/5] Running executable...
+echo [5/5] Build completed successfully.
+
 if exist Debug\VoiceEngine.exe (
     echo.
-    echo -------------------------------------
-    echo Running VoiceEngine...
-    echo -------------------------------------
-    Debug\VoiceEngine.exe
+    echo Executable found:
+    echo %cd%\Debug\VoiceEngine.exe
+    echo.
+    echo Run it manually when the app entrypoint is ready.
 ) else (
     echo.
-    echo Executable not found
+    echo Build completed, but VoiceEngine.exe was not found.
+    echo Check target name and output configuration.
 )
 
 echo.
@@ -54,3 +70,4 @@ echo =====================================
 echo   Done
 echo =====================================
 pause
+endlocal

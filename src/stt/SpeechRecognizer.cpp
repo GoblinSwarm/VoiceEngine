@@ -51,6 +51,7 @@
 // - Provider-specific details must remain inside concrete ISTTEngine implementations.
 // - Return VoiceEngine domain types instead of raw provider payloads.
 // - This module should remain a clean boundary between audio preparation and text interpretation.
+//
 
 #include "voice_engine/stt/SpeechRecognizer.h"
 
@@ -65,21 +66,49 @@ SpeechRecognizer::SpeechRecognizer(
 {
 }
 
-TranscriptionResult SpeechRecognizer::recognize(
-    const core::AudioBuffer& input,
-    const TranscriptionOptions& options)
+TranscriptionResult SpeechRecognizer::recognize(const core::AudioBuffer& input)
 {
     core::AudioBuffer preparedBuffer = m_preprocessor.prepareForSTT(input);
 
-    TranscriptionResult result = m_engine.transcribe(preparedBuffer, options);
-    m_lastError = m_engine.lastError();
+    if (preparedBuffer.empty())
+    {
+        TranscriptionResult result{};
+        result.status = RecognitionStatus::Failed;
+        result.errorMessage = "Prepared audio buffer is empty.";
+        return result;
+    }
 
-    return result;
-}
+    const core::AudioFormat& format = preparedBuffer.format();
 
-core::Error SpeechRecognizer::lastError() const
-{
-    return m_lastError;
+    if (format.sampleRate != 16000)
+    {
+        TranscriptionResult result{};
+        result.status = RecognitionStatus::Failed;
+        result.errorMessage = "Prepared audio buffer must use 16000 Hz sample rate for STT.";
+        return result;
+    }
+
+    if (format.channels != 1)
+    {
+        TranscriptionResult result{};
+        result.status = RecognitionStatus::Failed;
+        result.errorMessage = "Prepared audio buffer must be mono for STT.";
+        return result;
+    }
+
+    if (format.format != core::SampleFormat::Float32)
+    {
+        TranscriptionResult result{};
+        result.status = RecognitionStatus::Failed;
+        result.errorMessage = "Prepared audio buffer must use Float32 samples for STT.";
+        return result;
+    }
+
+    const std::vector<float> sttSamples(
+        preparedBuffer.samples().begin(),
+        preparedBuffer.samples().end());
+
+    return m_engine.transcribe(sttSamples);
 }
 
 } // namespace voice_engine::stt

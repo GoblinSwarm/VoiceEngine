@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 #include "voice_engine/audio/AudioPreprocessor.h"
 #include "voice_engine/audio/IAudioInput.h"
@@ -8,15 +9,16 @@
 #include "voice_engine/core/VoiceConfig.h"
 #include "voice_engine/orchestration/CommandRouter.h"
 #include "voice_engine/orchestration/VoiceEngine.h"
-#include "voice_engine/stt/ISTTEngine.h"
 #include "voice_engine/stt/SpeechRecognizer.h"
+#include "voice_engine/stt/STTConfig.h"
+#include "voice_engine/stt/WhisperEngine.h"
 #include "voice_engine/tts/ITTSEngine.h"
 #include "voice_engine/tts/SpeechSynthesizer.h"
 
 using namespace voice_engine;
 
 // ======================================================
-// MOCK AUDIO INPUT
+// MOCK AUDIO INPUT (UPDATED)
 // ======================================================
 
 class MockAudioInput : public audio::IAudioInput
@@ -67,10 +69,26 @@ public:
         core::AudioFormat format{};
         format.sampleRate = 16000;
         format.channels = 1;
+        format.format = core::SampleFormat::Float32;
 
-        std::vector<core::Sample> samples{
-            0.1f, 0.2f, 0.1f, -0.1f, 0.0f
-        };
+        constexpr int sampleRate = 16000;
+        constexpr float durationSeconds = 1.0f;
+        const std::size_t totalSamples =
+            static_cast<std::size_t>(sampleRate * durationSeconds);
+
+        std::vector<core::Sample> samples;
+        samples.reserve(totalSamples);
+
+        constexpr float amplitude = 0.2f;
+        constexpr float frequencyHz = 220.0f;
+        constexpr float twoPi = 6.28318530718f;
+
+        for (std::size_t i = 0; i < totalSamples; ++i)
+        {
+            const float t = static_cast<float>(i) / static_cast<float>(sampleRate);
+            const float value = amplitude * std::sin(twoPi * frequencyHz * t);
+            samples.push_back(value);
+        }
 
         return core::AudioBuffer(format, std::move(samples));
     }
@@ -165,52 +183,6 @@ private:
 };
 
 // ======================================================
-// MOCK STT ENGINE
-// ======================================================
-
-class MockSTTEngine : public stt::ISTTEngine
-{
-public:
-    bool initialize(const core::VoiceConfig&) override
-    {
-        m_initialized = true;
-        m_lastError = {};
-        return true;
-    }
-
-    [[nodiscard]] bool isInitialized() const noexcept override
-    {
-        return m_initialized;
-    }
-
-    [[nodiscard]] stt::TranscriptionResult transcribe(
-        const core::AudioBuffer&,
-        const stt::TranscriptionOptions&) override
-    {
-        stt::TranscriptionResult result;
-        result.fullText = "hello";
-        result.status = stt::RecognitionStatus::Completed;
-        result.averageConfidence = 1.0f;
-        result.language = "en";
-        return result;
-    }
-
-    void shutdown() override
-    {
-        m_initialized = false;
-    }
-
-    [[nodiscard]] core::Error lastError() const override
-    {
-        return m_lastError;
-    }
-
-private:
-    bool m_initialized{false};
-    core::Error m_lastError{};
-};
-
-// ======================================================
 // MOCK TTS ENGINE
 // ======================================================
 
@@ -279,8 +251,23 @@ int main()
 
     audio::AudioPreprocessor preprocessor;
 
-    MockSTTEngine sttEngine;
-    sttEngine.initialize(config);
+    stt::WhisperEngine sttEngine;
+    stt::STTConfig sttConfig{};
+    sttConfig.modelPath = "E:/Productos/VoiceEngine/models/stt/ggml-base.bin";
+    sttConfig.language = "es";
+    sttConfig.threads = 4;
+    sttConfig.beamSize = 5;
+    sttConfig.translateToEnglish = false;
+
+    if (!sttEngine.initialize(sttConfig))
+    {
+        std::cout << "Failed to initialize WhisperEngine." << std::endl;
+        std::cout << "Check model path and model file availability." << std::endl;
+        std::cout << "Press Enter to exit...";
+        std::cin.get();
+        return 1;
+    }
+
     stt::SpeechRecognizer recognizer(preprocessor, sttEngine);
 
     MockTTSEngine ttsEngine;
@@ -296,11 +283,12 @@ int main()
         synthesizer,
         router);
 
-    std::cout << "Running VoiceEngine (mock mode)..." << std::endl;
+    std::cout << "Running VoiceEngine (Whisper mode)..." << std::endl;
 
     if (!engine.processOnce())
     {
         std::cout << "VoiceEngine failed." << std::endl;
+        std::cout << "Error: " << engine.lastError().message << std::endl;
         std::cout << "Press Enter to exit...";
         std::cin.get();
         return 1;
