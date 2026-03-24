@@ -6,6 +6,41 @@
 //
 // Microphone-based audio input implementation for VoiceEngine.
 //
+// Architecture role
+// -----------------
+// Audio Input Layer (concrete implementation of IAudioInput).
+//
+// This module manages a complete microphone capture session
+// using AudioInputDevice as its low-level dependency.
+//
+// Responsibilities
+// ----------------
+// This module is responsible for:
+// - validating microphone capture configuration
+// - initializing and shutting down capture state
+// - starting and stopping batch microphone capture
+// - accumulating captured audio chunks into a single buffer
+// - enforcing maximum capture duration
+// - allowing early termination of capture
+// - building the final AudioBuffer for downstream processing
+//
+// Non-responsibilities
+// --------------------
+// This module MUST NOT:
+// - directly manage native audio APIs
+// - preprocess or transform captured audio
+// - perform STT inference
+// - implement VAD or silence detection
+// - make product/UI decisions about recording flow
+//
+// Design notes
+// ------------
+// - This implementation assumes AudioInputDevice provides
+//   chunk-based reads through captureOnce().
+// - captureOnce() here represents a full batch capture session.
+// - A short warmup phase is used to discard initial unstable chunks
+//   that may contain noise or backend startup artifacts.
+//
 
 #include "voice_engine/audio/MicAudioInput.h"
 
@@ -139,6 +174,8 @@ core::AudioBuffer MicAudioInput::captureOnce()
             core::ErrorCode::InvalidConfiguration,
             "Maximum capture duration produced zero frames."
         );
+        device.stopCapture();
+        capturing = false;
         return emptyBuffer;
     }
 
@@ -148,6 +185,7 @@ core::AudioBuffer MicAudioInput::captureOnce()
     );
 
     core::FrameCount accumulatedFrames = 0;
+    int warmupIterations = 3;
 
     while (!stopRequested && accumulatedFrames < maxFrames)
     {
@@ -155,11 +193,24 @@ core::AudioBuffer MicAudioInput::captureOnce()
 
         if (chunk.empty())
         {
-            lastErrorCode = device.lastError();
-            capturing = false;
-            device.stopCapture();
-            tempBuffer.clear();
-            return emptyBuffer;
+            const core::Error deviceError = device.lastError();
+
+            if (deviceError.code != core::ErrorCode::None)
+            {
+                lastErrorCode = deviceError;
+                device.stopCapture();
+                capturing = false;
+                tempBuffer.clear();
+                return emptyBuffer;
+            }
+
+            continue;
+        }
+
+        if (warmupIterations > 0)
+        {
+            --warmupIterations;
+            continue;
         }
 
         const core::FrameCount remainingFrames = maxFrames - accumulatedFrames;
@@ -175,6 +226,18 @@ core::AudioBuffer MicAudioInput::captureOnce()
             static_cast<std::size_t>(framesToCopy * chunk.format().channels);
 
         const std::vector<float>& chunkSamples = chunk.samples();
+
+        if (samplesToCopy > chunkSamples.size())
+        {
+            lastErrorCode = makeError(
+                core::ErrorCode::AudioCaptureFailed,
+                "Invalid chunk size received from audio device."
+            );
+            device.stopCapture();
+            capturing = false;
+            tempBuffer.clear();
+            return emptyBuffer;
+        }
 
         tempBuffer.insert(
             tempBuffer.end(),

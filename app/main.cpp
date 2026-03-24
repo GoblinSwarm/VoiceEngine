@@ -1,4 +1,6 @@
 #include <iostream>
+#include <thread>
+#include <atomic>
 #include <windows.h>
 
 #include "voice_engine/audio/MicAudioInput.h"
@@ -23,8 +25,8 @@ int main()
     core::VoiceConfig voiceConfig{};
     voiceConfig.audio.inputSampleRate = 16000;
     voiceConfig.audio.inputChannels = 1;
-    voiceConfig.audio.inputFramesPerBuffer = 1024;
-    voiceConfig.audio.maxInputCaptureDurationMs = 30000;
+    voiceConfig.audio.inputFramesPerBuffer = 2048;
+    voiceConfig.audio.maxInputCaptureDurationMs = 8000;
     voiceConfig.audio.enablePreprocessing = true;
 
     audio::MicAudioInput micInput;
@@ -49,9 +51,24 @@ int main()
 
     std::cout << "Recording from microphone..." << std::endl;
     std::cout << "Current max duration: 30 seconds" << std::endl;
+    std::cout << "Press Enter to stop recording early." << std::endl;
     std::cout << "Waiting for captured audio..." << std::endl;
 
+    std::atomic<bool> stopThreadFinished{false};
+
+    std::thread stopThread([&micInput, &stopThreadFinished]()
+    {
+        std::cin.get();
+        micInput.stopCapture();
+        stopThreadFinished = true;
+    });
+
     core::AudioBuffer buffer = micInput.captureOnce();
+
+    if (stopThread.joinable())
+    {
+        stopThread.join();
+    }
 
     if (buffer.empty())
     {
