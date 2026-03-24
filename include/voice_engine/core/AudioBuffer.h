@@ -38,6 +38,7 @@
 //
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "voice_engine/core/AudioTypes.h"
@@ -51,7 +52,7 @@ public:
     AudioBuffer() = default;
 
     AudioBuffer(AudioFormat format, std::vector<Sample> samples)
-        : format_(format), samples_(std::move(samples))
+        : format_(std::move(format)), samples_(std::move(samples))
     {
     }
 

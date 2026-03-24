@@ -1,42 +1,31 @@
-# Build folders
+# Build
 build/
-cmake-build-*/
 out/
 
 # CMake
-CMakeCache.txt
 CMakeFiles/
-CTestTestfile.cmake
+CMakeCache.txt
 cmake_install.cmake
 Makefile
-compile_commands.json
+
+# VS / VSCode
+.vs/
+.vscode/
+*.vcxproj*
+*.sln
 
 # Binaries
 *.exe
-*.out
-*.o
-*.obj
-*.so
 *.dll
-*.dylib
-*.a
 *.lib
+*.obj
+*.pdb
 
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
+# Models
+models/
+models/*.bin
+models/stt/*.bin
+models/tts/*.bin
 
 # Logs
 *.log
-
-# Models / generated assets
-models/
-assets/samples/generated/
-
-# Environment
-.env
-.env.*
