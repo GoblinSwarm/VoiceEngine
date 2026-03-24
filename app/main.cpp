@@ -1,9 +1,10 @@
 #include <iostream>
 #include <windows.h>
 
-#include "voice_engine/audio/WavAudioInput.h"
+#include "voice_engine/audio/MicAudioInput.h"
 #include "voice_engine/audio/AudioPreprocessor.h"
 #include "voice_engine/core/AudioBuffer.h"
+#include "voice_engine/core/VoiceConfig.h"
 #include "voice_engine/stt/SpeechRecognizer.h"
 #include "voice_engine/stt/STTConfig.h"
 #include "voice_engine/stt/STTTypes.h"
@@ -16,24 +17,52 @@ int main()
     SetConsoleOutputCP(CP_UTF8);
 
     // ======================================================
-    // 1. LOAD WAV
+    // 1. CONFIGURE MIC INPUT
     // ======================================================
 
-    audio::WavAudioInput wavInput;
+    core::VoiceConfig voiceConfig{};
+    voiceConfig.audio.inputSampleRate = 16000;
+    voiceConfig.audio.inputChannels = 1;
+    voiceConfig.audio.inputFramesPerBuffer = 1024;
+    voiceConfig.audio.maxInputCaptureDurationMs = 30000;
+    voiceConfig.audio.enablePreprocessing = true;
 
-    const std::string wavPath = "E:/Productos/VoiceEngine/test.wav";
+    audio::MicAudioInput micInput;
 
-    core::AudioBuffer buffer = wavInput.loadFromFile(wavPath);
-
-    if (buffer.empty())
+    if (!micInput.initialize(voiceConfig))
     {
-        std::cout << "Failed to load WAV file." << std::endl;
+        std::cout << "Failed to initialize microphone input." << std::endl;
+        std::cout << "Reason: " << micInput.lastError().message << std::endl;
         std::cout << "Press Enter to exit...";
         std::cin.get();
         return 1;
     }
 
-    std::cout << "WAV loaded successfully" << std::endl;
+    if (!micInput.startCapture())
+    {
+        std::cout << "Failed to start microphone capture." << std::endl;
+        std::cout << "Reason: " << micInput.lastError().message << std::endl;
+        std::cout << "Press Enter to exit...";
+        std::cin.get();
+        return 1;
+    }
+
+    std::cout << "Recording from microphone..." << std::endl;
+    std::cout << "Current max duration: 30 seconds" << std::endl;
+    std::cout << "Waiting for captured audio..." << std::endl;
+
+    core::AudioBuffer buffer = micInput.captureOnce();
+
+    if (buffer.empty())
+    {
+        std::cout << "Microphone capture failed." << std::endl;
+        std::cout << "Reason: " << micInput.lastError().message << std::endl;
+        std::cout << "Press Enter to exit...";
+        std::cin.get();
+        return 1;
+    }
+
+    std::cout << "Microphone capture completed successfully." << std::endl;
     std::cout << "Sample rate: " << buffer.format().sampleRate << std::endl;
     std::cout << "Channels: " << buffer.format().channels << std::endl;
     std::cout << "Samples: " << buffer.sampleCount() << std::endl;

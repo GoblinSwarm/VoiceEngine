@@ -12,6 +12,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(external/whisper.cpp)
 
 # ----------------------------------------
+# PortAudio
+# ----------------------------------------
+
+add_subdirectory(external/portaudio)
+
+# ----------------------------------------
 # VoiceEngine sources
 # ----------------------------------------
 
@@ -26,7 +32,10 @@ target_include_directories(VoiceEngine PRIVATE
     include
 )
 
-target_link_libraries(VoiceEngine PRIVATE whisper)
+target_link_libraries(VoiceEngine PRIVATE
+    whisper
+    portaudio
+)
 
 # ----------------------------------------
 # Copy runtime DLLs next to VoiceEngine.exe
@@ -53,5 +62,11 @@ add_custom_command(TARGET VoiceEngine POST_BUILD
 add_custom_command(TARGET VoiceEngine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:ggml-cpu>
+        $<TARGET_FILE_DIR:VoiceEngine>
+)
+
+add_custom_command(TARGET VoiceEngine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:portaudio>
         $<TARGET_FILE_DIR:VoiceEngine>
 )

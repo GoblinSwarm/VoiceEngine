@@ -27,5 +27,8 @@ models/*.bin
 models/stt/*.bin
 models/tts/*.bin
 
+# External Files
+external/
+
 # Logs
 *.log

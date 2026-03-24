@@ -50,6 +50,11 @@ struct AudioConfig
     SampleRate outputSampleRate = 22050;
     ChannelCount inputChannels = 1;
     ChannelCount outputChannels = 1;
+
+    // Mic capture settings
+    FrameCount inputFramesPerBuffer = 1024;
+    std::uint32_t maxInputCaptureDurationMs = 30000;
+
     bool enablePreprocessing = true;
 };
 

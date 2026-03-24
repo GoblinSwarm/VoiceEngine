@@ -6,18 +6,19 @@
 // AudioInputDevice
 // ----------------
 //
-// Concrete implementation of IAudioInput for capturing audio from a device.
+// Low-level audio input device abstraction.
 //
 // Architecture role
 // -----------------
-// Audio layer.
+// Audio infrastructure layer.
 //
-// This module provides a concrete implementation of audio input,
-// typically backed by a real device (e.g., microphone).
+// This module provides a thin wrapper over the underlying
+// audio backend (future: PortAudio / OS API).
 //
 // This module is responsible ONLY for:
 // - managing audio input device lifecycle
-// - capturing raw audio data into AudioBuffer
+// - opening and closing input streams
+// - capturing raw audio chunks into AudioBuffer
 //
 // Non-responsibilities
 // --------------------
@@ -25,6 +26,7 @@
 // - perform audio preprocessing
 // - perform STT
 // - decide when or why to capture audio
+// - manage high-level capture sessions
 //
 // Design notes
 // ------------
@@ -33,32 +35,34 @@
 // - Keep logic minimal and focused on device interaction.
 //
 
-#include "voice_engine/audio/IAudioInput.h"
+#include "voice_engine/core/AudioBuffer.h"
+#include "voice_engine/core/ErrorTypes.h"
+#include "voice_engine/core/VoiceConfig.h"
 
 namespace voice_engine::audio
 {
 
-class AudioInputDevice : public IAudioInput
+class AudioInputDevice
 {
 public:
     AudioInputDevice();
-    ~AudioInputDevice() override;
+    ~AudioInputDevice();
 
-    bool initialize(const core::VoiceConfig& config) override;
+    bool initialize(const core::VoiceConfig& config);
 
-    [[nodiscard]] bool isInitialized() const noexcept override;
+    [[nodiscard]] bool isInitialized() const noexcept;
 
-    bool startCapture() override;
+    bool startCapture();
 
-    void stopCapture() override;
+    void stopCapture();
 
-    [[nodiscard]] bool isCapturing() const noexcept override;
+    [[nodiscard]] bool isCapturing() const noexcept;
 
-    [[nodiscard]] core::AudioBuffer captureOnce() override;
+    [[nodiscard]] core::AudioBuffer captureOnce();
 
-    void shutdown() override;
+    void shutdown();
 
-    [[nodiscard]] core::Error lastError() const override;
+    [[nodiscard]] core::Error lastError() const;
 
 private:
     bool m_initialized{false};
@@ -69,6 +73,7 @@ private:
 
     // Futuro:
     // - backend handle (e.g., PortAudio stream)
+    void* m_stream{nullptr};
 };
 
 } // namespace voice_engine::audio
