@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <thread>
 #include <atomic>
@@ -9,12 +8,14 @@
 
 #include "voice_engine/audio/MicAudioInput.h"
 #include "voice_engine/audio/AudioPreprocessor.h"
+#include "voice_engine/audio/SpeakerAudioOutput.h"
 #include "voice_engine/core/AudioBuffer.h"
 #include "voice_engine/core/VoiceConfig.h"
 #include "voice_engine/stt/SpeechRecognizer.h"
 #include "voice_engine/stt/STTConfig.h"
 #include "voice_engine/stt/STTTypes.h"
 #include "voice_engine/stt/WhisperEngine.h"
+#include "voice_engine/providers/tts/PiperEngine.h"
 
 using namespace voice_engine;
 
@@ -382,33 +383,222 @@ void runSttDemo()
 // -----------------
 // Demo / validation entry point.
 //
+// This function executes the current local Piper-based
+// text-to-speech validation path for VoiceEngine.
+//
 // Responsibilities
 // ----------------
 // This function is responsible for:
-// - acting as the dedicated TTS test entry
-// - keeping the future TTS path isolated from STT
+// - configuring the local Piper TTS runtime
+// - initializing PiperEngine
+// - building a synthesis request
+// - invoking Piper-based speech synthesis
+// - validating the synthesis result
+// - printing basic synthesis metadata
+// - initializing speaker playback output
+// - reproducing the synthesized AudioBuffer
 //
 // Non-responsibilities
 // --------------------
 // This function MUST NOT:
-// - synthesize audio before the backend exists
 // - integrate STT
 // - integrate logic / command routing
+// - become the permanent application flow
 //
 // Design notes
 // ------------
 // - This path is intentionally separate.
-// - It will later be replaced by a real TTS test flow.
+// - The purpose is to validate:
+//   text -> PiperEngine -> Piper CLI -> wav -> AudioBuffer -> speakers
+// - This demo uses an explicit local Spanish voice path.
+// - Later, this can evolve into a more dynamic runtime
+//   path/voice selection strategy.
 //
 
 void runTtsDemo()
 {
+    // ======================================================
+    // 1. USER FEEDBACK
+    // ======================================================
+    //
+    // This block prints explicit status information so the user
+    // understands the current isolated TTS validation path.
+    //
+
     std::cout << std::endl;
     std::cout << "==================================" << std::endl;
     std::cout << " TTS DEMO" << std::endl;
     std::cout << "==================================" << std::endl;
-    std::cout << "TTS demo is not implemented yet." << std::endl;
-    std::cout << "Next step: integrate local TTS backend." << std::endl;
+    std::cout << "Preparing local Piper TTS runtime..." << std::endl;
+    std::cout << std::endl;
+
+    // ======================================================
+    // 2. CONFIGURE TTS RUNTIME
+    // ======================================================
+    //
+    // This block defines the TTS runtime configuration used
+    // by PiperEngine during this demo run.
+    //
+    // Current assumptions:
+    // - Piper executable lives under external/piper
+    // - a Spanish Piper voice is available
+    // - Piper runtime assets are resolved from the same folder
+    //
+
+    core::VoiceConfig voiceConfig{};
+
+    // ⚠️ RUTAS ABSOLUTAS (FIX REAL)
+    voiceConfig.tts.executablePath =
+        "E:/Productos/VoiceEngine/external/piper/piper.exe";
+
+    voiceConfig.tts.modelPath =
+        "E:/Productos/VoiceEngine/external/piper/voices/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx";
+
+    voiceConfig.tts.configPath =
+        "E:/Productos/VoiceEngine/external/piper/voices/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx.json";
+
+    voiceConfig.tts.workingDirectory =
+        "E:/Productos/VoiceEngine/external/piper";
+
+    // ======================================================
+    // 3. CREATE TTS ENGINE
+    // ======================================================
+    //
+    // PiperEngine is the concrete TTS provider implementation
+    // responsible for adapting VoiceEngine synthesis requests
+    // to Piper CLI execution.
+    //
+
+    providers::tts::PiperEngine ttsEngine;
+
+    // ======================================================
+    // 4. INITIALIZE TTS ENGINE
+    // ======================================================
+    //
+    // At this point the Piper-based TTS path is prepared.
+    // If initialization fails, we print the explicit error
+    // message exposed by PiperEngine and abort the demo run.
+    //
+
+    if (!ttsEngine.initialize(voiceConfig))
+    {
+        std::cout << "Failed to initialize PiperEngine." << std::endl;
+        std::cout << "Reason: " << ttsEngine.lastError().message << std::endl;
+        return;
+    }
+
+    // ======================================================
+    // 5. BUILD SYNTHESIS REQUEST
+    // ======================================================
+    //
+    // This request represents the text-domain input that will
+    // be synthesized into speech by the TTS provider.
+    //
+    // Current notes:
+    // - speechRate is mapped internally to Piper length-scale
+    // - outputFilePath is optional, but useful for validation
+    // - volume is currently carried as domain data, but not
+    //   directly applied by PiperEngine in this first version
+    //
+
+    tts::SynthesisRequest request{};
+    request.text = "Hola Daniel. Este es el sistema de texto a voz funcionando.";
+    request.speechRate = 1.0f;
+    request.volume = 1.0f;
+
+    // ======================================================
+    // 6. RUN TTS
+    // ======================================================
+    //
+    // This is the actual synthesis step:
+    // Text -> PiperEngine -> Piper CLI -> WAV -> AudioBuffer
+    //
+
+    std::cout << "Synthesizing audio..." << std::endl;
+
+    const tts::SynthesisResult result = ttsEngine.synthesize(request);
+
+    // ======================================================
+    // 7. VALIDATE TTS RESULT
+    // ======================================================
+    //
+    // If Piper failed or synthesis did not complete,
+    // print the returned error message and abort the demo.
+    //
+
+    if (result.status != tts::SynthesisStatus::Completed)
+    {
+        std::cout << "TTS failed." << std::endl;
+        std::cout << "Reason: " << result.errorMessage << std::endl;
+        return;
+    }
+
+    // ======================================================
+    // 8. PRINT SYNTHESIS RESULT
+    // ======================================================
+    //
+    // This is useful for validation:
+    // - generated sample count
+    // - resulting duration
+    // - persisted wav output path (if any)
+    //
+
+    std::cout << "TTS completed successfully." << std::endl;
+    std::cout << "Generated samples: " << result.audio.sampleCount() << std::endl;
+    std::cout << "Duration: " << result.audio.durationSeconds() << " sec" << std::endl;
+
+    // ======================================================
+    // 9. CREATE SPEAKER OUTPUT
+    // ======================================================
+    //
+    // SpeakerAudioOutput is the audio output module
+    // responsible for reproducing an AudioBuffer through
+    // the default system output device.
+    //
+
+    audio::SpeakerAudioOutput speakerOutput;
+
+    // ======================================================
+    // 10. INITIALIZE SPEAKER OUTPUT
+    // ======================================================
+    //
+    // At this point the playback path is prepared.
+    // If initialization fails, we print the explicit error
+    // message exposed by SpeakerAudioOutput and abort the demo run.
+    //
+
+    if (!speakerOutput.initialize(voiceConfig))
+    {
+        std::cout << "Failed to initialize SpeakerAudioOutput." << std::endl;
+        std::cout << "Reason: " << speakerOutput.lastError().message << std::endl;
+        return;
+    }
+
+    // ======================================================
+    // 11. PLAY SYNTHESIZED AUDIO
+    // ======================================================
+    //
+    // This is the actual playback step:
+    // AudioBuffer -> SpeakerAudioOutput -> speakers
+    //
+
+    std::cout << "Playing synthesized audio..." << std::endl;
+
+    if (!speakerOutput.play(result.audio))
+    {
+        std::cout << "Audio playback failed." << std::endl;
+        std::cout << "Reason: " << speakerOutput.lastError().message << std::endl;
+        return;
+    }
+
+    // ======================================================
+    // 12. PLAYBACK COMPLETED
+    // ======================================================
+    //
+    // Final result of the isolated TTS + playback demo.
+    //
+
+    std::cout << "Playback completed successfully." << std::endl;
 }
 
 // ======================================================

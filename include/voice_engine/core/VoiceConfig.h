@@ -37,6 +37,7 @@
 // - Configuration should describe runtime behavior, not implement it.
 //
 
+#include <cstdint>
 #include <string>
 
 #include "voice_engine/core/AudioTypes.h"
@@ -68,9 +69,20 @@ struct STTConfig
 
 struct TTSConfig
 {
+    // External TTS backend executable path (e.g. Piper CLI).
+    std::string executablePath{};
+
+    // Voice/model assets.
     std::string modelPath{};
     std::string configPath{};
+
+    // Optional working directory for external TTS execution.
+    std::string workingDirectory{};
+
+    // Optional logical voice identifier for higher-level selection.
     std::string voiceName{};
+
+    // Future-friendly synthesis controls.
     float speechRate = 1.0f;
     float volume = 1.0f;
 };

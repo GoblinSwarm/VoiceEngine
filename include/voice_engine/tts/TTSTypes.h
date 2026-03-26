@@ -13,11 +13,11 @@
 // TTS layer.
 //
 // This module defines the core data structures used to represent
-// text-to-speech synthesis results and related metadata inside VoiceEngine.
+// text-to-speech synthesis requests and results inside VoiceEngine.
 //
 // Typical examples may include:
-// - synthesis results
-// - audio output metadata
+// - synthesis requests
+// - synthesized audio results
 // - synthesis status information
 //
 // This module is responsible ONLY for:
@@ -37,8 +37,11 @@
 // ------------
 // - Keep these types provider-agnostic whenever possible.
 // - Prefer returning engine-neutral audio representations (e.g. AudioBuffer).
+// - Allow implementations to expose output-file metadata when synthesis
+//   naturally produces a file as an intermediate or final artifact.
 // - Avoid leaking backend-specific structures into the rest of the system.
-// - This file should define clear output types usable by synthesizers and orchestrators.
+// - This file should define clear input/output types usable by synthesizers
+//   and higher-level orchestration layers.
 //
 
 #include <string>
@@ -54,12 +57,10 @@ namespace voice_engine::tts
 
 enum class SynthesisStatus
 {
-    Idle = 0,
-    Processing,
-    Completed,
-    Failed
+    Completed = 0,
+    Failed,
+    InvalidInput
 };
-
 
 // ======================================================
 // Synthesis request
@@ -72,8 +73,10 @@ struct SynthesisRequest
     std::string voiceName{};
     float speechRate = 1.0f;
     float volume = 1.0f;
-};
 
+    // Optional target path for generated synthesis output.
+    std::string outputFilePath{};
+};
 
 // ======================================================
 // Synthesis result
@@ -83,11 +86,12 @@ struct SynthesisResult
 {
     core::AudioBuffer audio{};
 
-    std::string originalText{};
+    std::string inputText{};
+    std::string outputFilePath{};
 
-    SynthesisStatus status = SynthesisStatus::Idle;
+    SynthesisStatus status = SynthesisStatus::Failed;
 
-    double durationSeconds = 0.0;
+    std::string errorMessage{};
 };
 
 } // namespace voice_engine::tts

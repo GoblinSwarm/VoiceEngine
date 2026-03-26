@@ -179,12 +179,6 @@ core::AudioBuffer WavAudioInput::loadFromFile(const std::string& filePath)
                     return core::AudioBuffer {};
                 }
 
-                if (metadata.sampleRate != kRequiredSampleRate)
-                {
-                    setError(makeAudioError("Unsupported WAV format: sample rate must be 16000 Hz."));
-                    return core::AudioBuffer {};
-                }
-
                 if ((metadata.dataSize % sizeof(std::int16_t)) != 0)
                 {
                     setError(makeAudioError("Invalid WAV file: PCM16 data chunk size is misaligned."));

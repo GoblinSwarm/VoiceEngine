@@ -70,3 +70,13 @@ add_custom_command(TARGET VoiceEngine POST_BUILD
         $<TARGET_FILE:portaudio>
         $<TARGET_FILE_DIR:VoiceEngine>
 )
+
+# ----------------------------------------
+# Copy Piper runtime next to VoiceEngine.exe
+# ----------------------------------------
+
+add_custom_command(TARGET VoiceEngine POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/external/piper/piper.exe
+        $<TARGET_FILE_DIR:VoiceEngine>
+)

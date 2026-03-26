@@ -1,0 +1,3 @@
+[submodule "external/piper"]
+	path = external/piper
+	url = https://github.com/rhasspy/piper.git
