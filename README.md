@@ -38,21 +38,19 @@ Orchestration Layer
 ├── VoiceEngine (facade)
 └── CommandRouter
 
-
 ### 🔁 Pipeline Flow
 
-Audio Input
-↓
-AudioPreprocessor
-↓
-SpeechRecognizer → ISTTEngine
-↓
-CommandRouter
-↓
-SpeechSynthesizer → ITTSEngine
-↓
-Audio Output
-
+Audio Input  
+↓  
+AudioPreprocessor  
+↓  
+SpeechRecognizer → ISTTEngine  
+↓  
+CommandRouter  
+↓  
+SpeechSynthesizer → ITTSEngine  
+↓  
+Audio Output  
 
 ---
 
@@ -62,50 +60,53 @@ Audio Output
 ✅ Clean layered architecture  
 ✅ Provider-agnostic interfaces (STT / TTS)  
 ✅ Fully local execution (no external services required)  
-
-⬜ Real STT integration (Whisper.cpp)  
-⬜ Real TTS integration (Piper)  
-⬜ Real audio input/output  
+✅ Real STT integration (Whisper.cpp)  
+✅ Real TTS integration (Piper)  
+✅ Real audio input/output  
 
 ---
 
 ## 🚀 Build Instructions (Windows)
 
-```bash
-cmake .. -G "Visual Studio 17 2022" -A x64
-cmake --build . --config Debug
+Run:
 
-▶️ Run
-.\Debug\VoiceEngine.exe
+```bat
+.\build.bat
+```
 
-🧪 Example Output
-Running VoiceEngine (mock mode)...
-[TTS OUTPUT] Hello. How can I help you?
-[AUDIO OUTPUT] Playing 4 samples at 22050 Hz, channels=1
-Done.
+## This will automatically:
 
-🎯 Design Goals
-Modularity first — every subsystem is replaceable
-Local-first execution — no dependency on cloud APIs
-Clear boundaries — strict separation of concerns
-Testability — mock-driven development supported
-Extensibility — easy integration of new engines and behaviors
+- Setup dependencies (whisper.cpp, portaudio)
+- Download Piper + voice
+- Download Whisper model
+- Build the project
 
-🔮 Roadmap
-Integrate Whisper.cpp for STT
-Integrate Piper for TTS
-Real-time audio capture and playback
-Expand CommandRouter into a richer semantic system
-Multi-language support
+## ▶️ Run (manual)
 
-📌 Notes
-This project is part of a broader exploration into:
+If you choose not to run it automatically:
+.\build\Debug\VoiceEngine.exe
 
-real-time systems
-audio processing pipelines
-AI-assisted local applications
-modular system design in C++
+## 🎯 Design Goals
+- Modularity first — every subsystem is replaceable
+- Local-first execution — no dependency on cloud APIs
+- Clear boundaries — strict separation of concerns
+- Testability — mock-driven development supported
+- Extensibility — easy integration of new engines and behaviors
 
-👤 Author
+## 🔮 Roadmap
+- Integrate Whisper.cpp for STT
+- Integrate Piper for TTS
+- Real-time audio capture and playback
+- Expand CommandRouter into a richer semantic system
+- Multi-language support
+
+## 📌 Notes
+- This project is part of a broader exploration into:
+- real-time systems
+- audio processing pipelines
+- AI-assisted local applications
+- modular system design in C++
+
+## 👤 Author
 Daniel "Goblin" Perdomo
 GitHub: https://github.com/GoblinSwarm

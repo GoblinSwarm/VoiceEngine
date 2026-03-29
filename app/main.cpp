@@ -2,6 +2,7 @@
 #include <thread>
 #include <atomic>
 #include <limits>
+#include <filesystem>
 
 #define NOMINMAX
 #include <windows.h>
@@ -11,6 +12,7 @@
 #include "voice_engine/audio/SpeakerAudioOutput.h"
 #include "voice_engine/core/AudioBuffer.h"
 #include "voice_engine/core/VoiceConfig.h"
+#include "voice_engine/core/PathUtils.h"
 #include "voice_engine/stt/SpeechRecognizer.h"
 #include "voice_engine/stt/STTConfig.h"
 #include "voice_engine/stt/STTTypes.h"
@@ -309,8 +311,17 @@ void runSttDemo()
 
     stt::WhisperEngine sttEngine;
 
+    const auto root = core::getProjectRoot();
+    
+    namespace fs = std::filesystem;
+    if (!fs::exists(root / "models/stt/ggml-base.bin"))
+    {
+        std::cout << "ERROR: Whisper model not found." << std::endl;
+        return;
+    }
+
     stt::STTConfig sttConfig{};
-    sttConfig.modelPath = "E:/Productos/VoiceEngine/models/stt/ggml-base.bin";
+    sttConfig.modelPath = (root / "models/stt/ggml-base.bin").string();
     sttConfig.language = "es";
     sttConfig.threads = 4;
     sttConfig.beamSize = 5;
@@ -447,18 +458,32 @@ void runTtsDemo()
 
     core::VoiceConfig voiceConfig{};
 
-    // ⚠️ RUTAS ABSOLUTAS (FIX REAL)
+    const auto root = core::getProjectRoot();
+
+    namespace fs = std::filesystem;
+    if (!fs::exists(root / "external/piper/piper.exe"))
+    {
+        std::cout << "ERROR: Piper executable not found." << std::endl;
+        return;
+    }
+
+    if (!fs::exists(root / "external/piper/voices"))
+    {
+        std::cout << "ERROR: Piper voices folder not found." << std::endl;
+        return;
+    }
+
     voiceConfig.tts.executablePath =
-        "E:/Productos/VoiceEngine/external/piper/piper.exe";
+        (root / "external/piper/piper.exe").string();
 
     voiceConfig.tts.modelPath =
-        "E:/Productos/VoiceEngine/external/piper/voices/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx";
+        (root / "external/piper/voices/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx").string();
 
     voiceConfig.tts.configPath =
-        "E:/Productos/VoiceEngine/external/piper/voices/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx.json";
+        (root / "external/piper/voices/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx.json").string();
 
     voiceConfig.tts.workingDirectory =
-        "E:/Productos/VoiceEngine/external/piper";
+        (root / "external/piper").string();
 
     // ======================================================
     // 3. CREATE TTS ENGINE
@@ -502,7 +527,17 @@ void runTtsDemo()
     //
 
     tts::SynthesisRequest request{};
-    request.text = "Hola Daniel. Este es el sistema de texto a voz funcionando.";
+
+    std::string text;
+    std::cout << "Enter text to synthesize: ";
+    std::getline(std::cin, text);
+
+    if (text.empty())
+    {
+        text = "No escribiste nada para que dijera.";
+    }
+
+    request.text = text;
     request.speechRate = 1.0f;
     request.volume = 1.0f;
 

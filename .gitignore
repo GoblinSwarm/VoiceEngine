@@ -21,13 +21,8 @@ Makefile
 *.obj
 *.pdb
 
-# Models
+# Downloaded/runtime assets
 models/
-models/*.bin
-models/stt/*.bin
-models/tts/*.bin
-
-# External Files
 external/
 
 # Logs
